@@ -5,7 +5,7 @@ from .color import Color
 from .exceptions import *  # NOQA
 from .ratelimits import RateLimitedEndpoint, Ratelimits
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 __all__ = [
     "Canvas",
