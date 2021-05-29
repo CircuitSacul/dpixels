@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 
 
 def map_255_to_1(value: int):
-    max1, min1 = (1, 0)
-    max2, min2 = (255, 0)
+    max1, min1 = (255, 0)
+    max2, min2 = (1, 0)
 
     # Figure out how 'wide' each range is
     span1 = max1 - min1
