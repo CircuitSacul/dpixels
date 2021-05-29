@@ -67,7 +67,10 @@ class Client:
         going = True
         while going:
             await self.get_canvas()
-            going = forever or any_needs_update()
+
+            any_needs = any_needs_update()
+            going = forever or any_needs
+
             for s in sources:
                 if not s.needs_update:
                     continue

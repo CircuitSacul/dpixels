@@ -50,9 +50,11 @@ class Source:
     def update_fix_queue(self, canvas: "Canvas"):
         if not self.fix:
             return
-        self.fix_queue = []
         for x, y, p in self.pixels:
-            if p in self.pixel_queue:
+            v = (x, y, p)
+            if v in self.pixel_queue:
+                continue
+            if v in self.fix_queue:
                 continue
             if canvas[x, y] != p:
                 self.fix_queue.append((x, y, p))
