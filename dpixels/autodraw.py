@@ -100,8 +100,8 @@ class AutoDraw:
             for x, p in enumerate(data[start : start + width]):
                 if image.mode == "RGBA":
                     p = list(p)
-                    c = Color(*p)
                     p[-1] = map_255_to_1(p[-1])
+                    c = Color(*p)
                     if bg_color:
                         c = Color(*bg_color.add_color_with_alpha(c))
                 else:
