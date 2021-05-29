@@ -13,7 +13,7 @@ MAX1, MIN1 = (255, 0)
 MAX2, MIN2 = (1, 0)
 
 def map_255_to_1(value: int):
-    return min2 + (((value - MIN1) / (MAX1 - MIN1)) * (MAX2 - MIN2))
+    return MIN2 + (((value - MIN1) / (MAX1 - MIN1)) * (MAX2 - MIN2))
 
 
 class AutoDraw:
