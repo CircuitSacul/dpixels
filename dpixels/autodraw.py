@@ -9,20 +9,11 @@ from .color import Color
 if TYPE_CHECKING:
     from .client import Client
 
+MAX1, MIN1 = (255, 0)
+MAX2, MIN2 = (1, 0)
 
 def map_255_to_1(value: int):
-    max1, min1 = (255, 0)
-    max2, min2 = (1, 0)
-
-    # Figure out how 'wide' each range is
-    span1 = max1 - min1
-    span2 = max2 - min2
-
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - min1) / float(span1)
-
-    # Convert the 0-1 range into a value in the right range.
-    return min2 + (valueScaled * span2)
+    return min2 + (((value - MIN1) / (MAX1 - MIN1)) * (MAX2 - MIN2))
 
 
 class AutoDraw:
