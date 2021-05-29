@@ -14,7 +14,7 @@ In order for the ratelimit to work cross-restart, you MUST do it like this:
 ```py
 async def run():
     try:
-        # code ehre
+        # code here
     finally:
         await client.close()
         
@@ -49,7 +49,7 @@ Autodrawing an image:
 ```py
 from PIL import Image
 
-im = Image.load("path_to_image.png")
+im = Image.open("path_to_image.ext")
 
 source = dpixels.Source.from_image((0, 0), im)
 await client.draw_sources([source])  # draw the source
