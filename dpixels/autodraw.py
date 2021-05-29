@@ -98,12 +98,14 @@ class AutoDraw:
 
         for y, start in enumerate(range(0, len(data), width)):
             for x, p in enumerate(data[start : start + width]):
-                c = Color(*p)
                 if image.mode == "RGBA":
                     p = list(p)
+                    c = Color(*p)
                     p[-1] = map_255_to_1(p[-1])
                     if bg_color:
                         c = Color(*bg_color.add_color_with_alpha(c))
+                else:
+                    c = Color(*p)
                 pixels.append((x, y, c))
 
         return cls(client, *xy, pixels)
