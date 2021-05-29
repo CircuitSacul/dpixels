@@ -45,13 +45,11 @@ class Client:
         self, sources: List["Source"], forever: bool = True
     ):
         async def do_draw(s: "Source"):
-            canvas = await self.get_canvas()
-            await s.update_fix_queue(canvas)
             val = s.get_next_pixel()
             if not val:
                 return
             x, y, p = val
-            if canvas[x, y] == p:
+            if self.canvas[x, y] == p:
                 return
             try:
                 await self.set_pixel(x, y, p)
@@ -59,14 +57,16 @@ class Client:
             except (Cooldown, Ratelimit) as e:
                 await e.ratelimit.pause()
 
-        def any_needs_update() -> bool:
+        async def any_needs_update() -> bool:
             for s in sources:
+                await s.update_fix_queue(self.canvas)
                 if s.needs_update:
                     return True
             return False
 
         going = True
         while going:
+            await self.get_canvas()
             going = forever or any_needs_update()
             for s in sources:
                 if not s.needs_update:
