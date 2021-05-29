@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
 import aiohttp
 
@@ -8,6 +8,9 @@ from .canvas import Canvas
 from .color import Color
 from .exceptions import Cooldown, HttpException, Ratelimit
 from .ratelimits import Ratelimits
+
+if TYPE_CHECKING:
+    from .source import Source
 
 logger = logging.getLogger("dpixels")
 
@@ -37,6 +40,35 @@ class Client:
 
         self.ratelimits = Ratelimits(save_file)
         self.canvas: Optional[Canvas] = None
+
+    async def draw_sources(
+        self, sources: List["Source"], forever: bool = True
+    ):
+        async def do_draw(s: "Source"):
+            val = s.get_next_pixel()
+            if not val:
+                return
+            x, y, p = val
+            try:
+                await self.set_pixel(x, y, p)
+                return
+            except (Cooldown, Ratelimit) as e:
+                await e.ratelimit.pause()
+
+        def any_needs_update() -> bool:
+            for s in sources:
+                if s.needs_update:
+                    return True
+            return False
+
+        going = True
+        while going:
+            going = forever or any_needs_update()
+            for s in sources:
+                if not s.needs_update:
+                    continue
+                await do_draw(s)
+                break
 
     async def get_canvas_size(self):
         data = await self.request("GET", self.e_get_size)
@@ -132,14 +164,17 @@ class Client:
         session = await self.get_session()
 
         ratelimit = self.ratelimits.ratelimits[endpoint]
+        await ratelimit.lock.acquire()
         if not ratelimit.valid:
-            logger.warning("Ratelimit is invalid.")
+            logger.debug("Ratelimit is invalid.")
             retry_after = None
         else:
             retry_after = ratelimit.retry_after
         if retry_after:
             if not retry_on_ratelimit:
+                ratelimit.lock.release()
                 raise Ratelimit(endpoint, retry_after, ratelimit)
+            ratelimit.lock.release()
             await ratelimit.pause()
             return await self.request(
                 method,
@@ -157,6 +192,7 @@ class Client:
             params=params,
         ) as resp:
             ratelimit.update(resp.headers)
+            ratelimit.lock.release()
             if resp.status == 429:
                 raise Cooldown(endpoint, ratelimit.retry_after, ratelimit)
             if 500 > resp.status > 400:

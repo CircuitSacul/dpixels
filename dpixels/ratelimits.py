@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 import logging
+from asyncio import Lock
 from collections import defaultdict
 from typing import Any, Dict, Optional
 
@@ -20,6 +21,8 @@ class RateLimitedEndpoint:
 
         self.reset: datetime.datetime = None
         self.cooldown_reset: datetime.datetime = None
+
+        self.lock = Lock()
 
     def update(self, headers: Dict[str, Any]):
         """Update the ratelimiter based on the latest headers."""

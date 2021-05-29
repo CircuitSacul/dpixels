@@ -1,13 +1,11 @@
-import asyncio
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from PIL import Image
 
-from .exceptions import Cooldown, Ratelimit
 from .color import Color
 
 if TYPE_CHECKING:
-    from .client import Client
+    from .canvas import Canvas
 
 MAX1, MIN1 = (255, 0)
 MAX2, MIN2 = (1, 0)
@@ -17,17 +15,17 @@ def map_255_to_1(value: int):
     return MIN2 + (((value - MIN1) / (MAX1 - MIN1)) * (MAX2 - MIN2))
 
 
-class AutoDraw:
+class Source:
     def __init__(
         self,
-        client: "Client",
         x: int,
         y: int,
         pixels: List[Tuple[int, int, Color]],
+        fix: bool,
     ):
-        self.client = client
         self.x = x
         self.y = y
+        self.fix = fix
         self.pixels = []
         for x, y, p in pixels:
             if p.a == 0:
@@ -35,52 +33,40 @@ class AutoDraw:
             p.a = 1
             self.pixels.append((x, y, p))
 
-    async def do_pixel(self, x: int, y: int, p: Color):
-        try:
-            await self.client.set_pixel(x, y, p)
-        except (Ratelimit, Cooldown) as r:
-            await r.ratelimit.pause()
-            return await self.do_pixel(x, y, p)
+        self.pixel_queue: List[Tuple[int, int, Color]] = self.pixels.copy()
+        self.fix_queue: List[Tuple[int, int, Color]] = []
 
-    async def draw(self):
-        canvas = await self.client.get_canvas()
-        for _x, _y, pix in self.pixels:
-            x = _x + self.x
-            y = _y + self.y
-            if canvas[x, y] != pix:
-                await self.do_pixel(x, y, pix)
+    @property
+    def needs_update(self) -> bool:
+        return (self.fix and self.fix_queue) or self.pixel_queue
 
-    async def draw_and_fix(
-        self,
-        forever: bool = True,
-        guard_delay: int = 3,
-    ):
-        done: bool = False
-        while not done:
-            canvas = await self.client.get_canvas()
-            loop = False
-            for _x, _y, pix in self.pixels:
-                x = _x + self.x
-                y = _y + self.y
-                if canvas[x, y] != pix:
-                    await self.do_pixel(x, y, pix)
-                    loop = True
-                    break
-            if loop:
+    def get_next_pixel(self) -> Optional[Tuple[int,  int, "Color"]]:
+        if self.fix and self.fix_queue:
+            return self.fix_queue.pop()
+        if self.pixel_queue:
+            return self.pixel_queue.pop()
+        return None
+
+    async def update_fix_queue(self, canvas: "Canvas"):
+        if not self.fix:
+            return
+        self.fix_queue = []
+        for x, y, p in self.pixels:
+            if p in self.pixel_queue:
                 continue
-            if not forever:
-                return
-            await asyncio.sleep(guard_delay)
+            if canvas[x, y] != p:
+                self.fix_queue.append((x, y, p))
 
     @classmethod
     def from_image(
         cls,
-        client: "Client",
         xy: Tuple[int, int],
         image: Image.Image,
+        *,
+        fix: bool = True,
         scale: int = 1,
         bg_color: Optional[Color] = None,
-    ) -> "AutoDraw":
+    ) -> "Source":
         if image.mode not in ["RGB", "RGBA"]:
             raise RuntimeError("Images must be either RGB or RGBA.")
 
@@ -92,8 +78,10 @@ class AutoDraw:
         data = list(image.getdata())
         pixels: List[Tuple[int, int, Color]] = []
 
-        for y, start in enumerate(range(0, len(data), width)):
-            for x, p in enumerate(data[start : start + width]):
+        for _y, start in enumerate(range(0, len(data), width)):
+            y = _y + xy[1]
+            for _x, p in enumerate(data[start : start + width]):
+                x = _x + xy[0]
                 if image.mode == "RGBA":
                     p = list(p)
                     p[-1] = map_255_to_1(p[-1])
@@ -104,17 +92,20 @@ class AutoDraw:
                     c = Color(*p)
                 pixels.append((x, y, c))
 
-        return cls(client, *xy, pixels)
+        return cls(*xy, pixels, fix=fix)
 
     @classmethod
     def from_array(
         cls,
-        client: "Client",
         xy: Tuple[int, int],
         array: List[List[Color]],
-    ):
+        *,
+        fix: bool = True,
+    ) -> "Source":
         lst: List[Tuple[int, int, Color]] = []
-        for y, col in enumerate(array):
-            for x, pix in enumerate(col):
+        for _y, col in enumerate(array):
+            y = xy[1] + _y
+            for _x, pix in enumerate(col):
+                x = xy[0] + _x
                 lst.append((x, y, pix))
-        return cls(client, *xy, lst)
+        return cls(*xy, lst, fix=fix)

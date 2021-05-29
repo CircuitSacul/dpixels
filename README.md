@@ -51,7 +51,6 @@ from PIL import Image
 
 im = Image.load("path_to_image.png")
 
-ad = dpixels.AutoDraw.from_image(client, (0, 0), im)
-await ad.draw()  # draw the image
-await ad.draw_and_fix()  # or, draw and prioritize fixing existing pixels
+source = dpixels.Source.from_image((0, 0), im)
+await client.draw_sources([source])  # draw the source
 ```
