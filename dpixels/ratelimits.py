@@ -29,7 +29,7 @@ class RateLimitedEndpoint:
         self.valid = True
         if "Cooldown-Reset" in headers:
             self.remaining = 0
-            cooldown_reset = int(headers["Cooldown-Reset"])
+            cooldown_reset = float(headers["Cooldown-Reset"])
             self.cooldown_reset = (
                 datetime.timedelta(seconds=cooldown_reset)
                 + datetime.datetime.now()
@@ -40,7 +40,7 @@ class RateLimitedEndpoint:
             return
         self.remaining = int(headers["Requests-Remaining"])
         self.limit = int(headers["Requests-Limit"])
-        reset = int(headers.get("Requests-Reset", self.reset))
+        reset = float(headers.get("Requests-Reset", self.reset))
         self.reset = (
             datetime.timedelta(seconds=reset) + datetime.datetime.now()
         )
