@@ -42,9 +42,9 @@ class Source:
 
     def get_next_pixel(self) -> Optional[Tuple[int,  int, "Color"]]:
         if self.fix and self.fix_queue:
-            return self.fix_queue.pop()
+            return self.fix_queue.pop(0)
         if self.pixel_queue:
-            return self.pixel_queue.pop()
+            return self.pixel_queue.pop(0)
         return None
 
     def update_fix_queue(self, canvas: "Canvas"):
