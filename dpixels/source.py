@@ -47,7 +47,7 @@ class Source:
             return self.pixel_queue.pop()
         return None
 
-    async def update_fix_queue(self, canvas: "Canvas"):
+    def update_fix_queue(self, canvas: "Canvas"):
         if not self.fix:
             return
         self.fix_queue = []

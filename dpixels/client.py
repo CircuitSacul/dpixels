@@ -50,16 +50,16 @@ class Client:
                 return
             x, y, p = val
             if self.canvas[x, y] == p:
-                return
+                return await do_draw(s)
             try:
                 await self.set_pixel(x, y, p)
                 return
             except (Cooldown, Ratelimit) as e:
                 await e.ratelimit.pause()
 
-        async def any_needs_update() -> bool:
+        def any_needs_update() -> bool:
             for s in sources:
-                await s.update_fix_queue(self.canvas)
+                s.update_fix_queue(self.canvas)
                 if s.needs_update:
                     return True
             return False
