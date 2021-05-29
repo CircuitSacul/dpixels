@@ -1,9 +1,9 @@
-import logging
 import asyncio
 import datetime
 import json
-from typing import Any, Dict, Optional
+import logging
 from collections import defaultdict
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("dpixels")
 
@@ -24,23 +24,22 @@ class RateLimitedEndpoint:
     def update(self, headers: Dict[str, Any]):
         """Update the ratelimiter based on the latest headers."""
         self.valid = True
-        if 'Cooldown-Reset' in headers:
+        if "Cooldown-Reset" in headers:
             self.remaining = 0
-            cooldown_reset = int(headers['Cooldown-Reset'])
+            cooldown_reset = int(headers["Cooldown-Reset"])
             self.cooldown_reset = (
                 datetime.timedelta(seconds=cooldown_reset)
                 + datetime.datetime.now()
             )
             return
-        if 'Requests-Remaining' not in headers:
+        if "Requests-Remaining" not in headers:
             self.ratelimited = False
             return
-        self.remaining = int(headers['Requests-Remaining'])
-        self.limit = int(headers['Requests-Limit'])
-        reset = int(headers.get('Requests-Reset', self.reset))
+        self.remaining = int(headers["Requests-Remaining"])
+        self.limit = int(headers["Requests-Limit"])
+        reset = int(headers.get("Requests-Reset", self.reset))
         self.reset = (
-            datetime.timedelta(seconds=reset)
-            + datetime.datetime.now()
+            datetime.timedelta(seconds=reset) + datetime.datetime.now()
         )
 
     @property
@@ -70,19 +69,21 @@ class RateLimitedEndpoint:
             "ratelimited": self.ratelimited,
             "remaining": self.remaining,
             "limit": self.limit,
-            "reset": self.reset.timestamp() if self.reset is not None
+            "reset": self.reset.timestamp()
+            if self.reset is not None
             else None,
-            "cooldown_reset": self.cooldown_reset.timestamp() if
-            self.cooldown_reset is not None else None,
+            "cooldown_reset": self.cooldown_reset.timestamp()
+            if self.cooldown_reset is not None
+            else None,
         }
 
     def load(self, data: dict):
         reset = data.pop("reset", None)
         cooldown = data.pop("cooldown_reset", None)
         self.reset = datetime.datetime.fromtimestamp(reset) if reset else None
-        self.cooldown_reset = datetime.datetime.fromtimestamp(
-            cooldown
-        ) if cooldown else None
+        self.cooldown_reset = (
+            datetime.datetime.fromtimestamp(cooldown) if cooldown else None
+        )
         for key, val in data.items():
             self.__setattr__(key, val)
         self.valid = True

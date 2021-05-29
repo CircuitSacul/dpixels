@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from .ratelimits import RateLimitedEndpoint
 
@@ -18,10 +17,7 @@ class DPixelsError(Exception):
 
 class Cooldown(DPixelsError):
     def __init__(
-        self,
-        endpoint: str,
-        time: int,
-        ratelimit: "RateLimitedEndpoint"
+        self, endpoint: str, time: int, ratelimit: "RateLimitedEndpoint"
     ):
         self.ratelimit = ratelimit
         super().__init__(
@@ -46,6 +42,4 @@ class Ratelimit(DPixelsError):
 
 class HttpException(DPixelsError):
     def __init__(self, status: int, detail: str):
-        super().__init__(
-            f"HTTP Error {status}: {detail}"
-        )
+        super().__init__(f"HTTP Error {status}: {detail}")

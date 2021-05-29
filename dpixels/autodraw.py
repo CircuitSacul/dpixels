@@ -1,9 +1,9 @@
 import asyncio
-from dpixels.exceptions import Cooldown, Ratelimit
-from typing import List, Optional, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from PIL import Image
 
+from .exceptions import Cooldown, Ratelimit
 from .color import Color
 
 if TYPE_CHECKING:
@@ -86,12 +86,10 @@ class AutoDraw:
         bg_color: Optional[Color] = None,
     ) -> "AutoDraw":
         if image.mode not in ["RGB", "RGBA"]:
-            raise RuntimeError(
-                "Images must be either RGB or RGBA."
-            )
+            raise RuntimeError("Images must be either RGB or RGBA.")
 
-        width = round(image.width*scale)
-        height = round(image.width*scale)
+        width = round(image.width * scale)
+        height = round(image.width * scale)
         if scale != 1:
             image = image.resize((width, height))
 
@@ -99,7 +97,7 @@ class AutoDraw:
         pixels: List[Tuple[int, int, Color]] = []
 
         for y, start in enumerate(range(0, len(data), width)):
-            for x, p in enumerate(data[start:start+width]):
+            for x, p in enumerate(data[start : start + width]):
                 c = Color(*p)
                 if image.mode == "RGBA":
                     p = list(p)

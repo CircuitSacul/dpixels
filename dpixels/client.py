@@ -4,10 +4,10 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import aiohttp
 
-from .ratelimits import Ratelimits
-from .exceptions import Cooldown, HttpException, Ratelimit
 from .canvas import Canvas
 from .color import Color
+from .exceptions import Cooldown, HttpException, Ratelimit
+from .ratelimits import Ratelimits
 
 logger = logging.getLogger("dpixels")
 
@@ -50,12 +50,7 @@ class Client:
         return self.canvas
 
     async def set_pixel(
-        self,
-        x: int,
-        y: int,
-        color: "Color",
-        *,
-        retry: bool = False
+        self, x: int, y: int, color: "Color", *, retry: bool = False
     ):
         if self.canvas:
             current = self.canvas[x, y]
@@ -73,7 +68,7 @@ class Client:
                 "y": y,
                 "rgb": ashex,
             },
-            retry_on_ratelimit=retry
+            retry_on_ratelimit=retry,
         )
         logger.debug(data["message"])
         return data["message"]
@@ -88,7 +83,7 @@ class Client:
                 "x": x,
                 "y": y,
             },
-            retry_on_ratelimit=retry
+            retry_on_ratelimit=retry,
         )
         c = Color.from_hex(data["rgb"])
         if self.canvas:
@@ -113,9 +108,9 @@ class Client:
                 "dest": {
                     "x": xy1[0],
                     "y": xy1[1],
-                }
+                },
             },
-            retry_on_ratelimit=retry
+            retry_on_ratelimit=retry,
         )
         return data["message"]
 
@@ -147,11 +142,12 @@ class Client:
                 raise Ratelimit(endpoint, retry_after, ratelimit)
             await ratelimit.pause()
             return await self.request(
-                method, endpoint,
+                method,
+                endpoint,
                 data=data,
                 params=params,
                 parse_json=parse_json,
-                retry_on_ratelimit=False
+                retry_on_ratelimit=False,
             )
 
         async with session.request(

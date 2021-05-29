@@ -8,8 +8,7 @@ class Color:
     def add_color_with_alpha(self, color: "Color"):
         a = color.a
         return [
-            int(a * c1 + (1-a) * c2)
-            for (c1, c2) in zip(color.rgb, self.rgb)
+            int(a * c1 + (1 - a) * c2) for (c1, c2) in zip(color.rgb, self.rgb)
         ]
 
     @property
@@ -20,7 +19,7 @@ class Color:
     @property
     def hex(self):
         """Get the color has a hex string."""
-        return f'{self.r:0>2x}{self.g:0>2x}{self.b:0>2x}'
+        return f"{self.r:0>2x}{self.g:0>2x}{self.b:0>2x}"
 
     @property
     def rgba(self):
@@ -38,4 +37,4 @@ class Color:
     @classmethod
     def from_hex(cls, hex_value: str) -> "Color":
         hex_value = hex_value.lstrip("#")
-        return cls(*(int(hex_value[i:i + 2], 16) for i in range(0, 6, 2)))
+        return cls(*(int(hex_value[i : i + 2], 16) for i in range(0, 6, 2)))
