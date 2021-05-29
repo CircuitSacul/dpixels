@@ -8,6 +8,19 @@ A(nother) wrapper for the Python Discord Pixel API.
  - Supports autodrawing of images.
 
 ## Examples
+
+### Note:
+In order for the ratelimit to work cross-restart, you MUST do it like this:
+```py
+async def run():
+    try:
+        # code ehre
+    finally:
+        await client.close()
+        
+asyncio.run(run())
+```
+
 Get the canvas:
 ```py
 client = dpixels.Client(token="your token")
@@ -29,7 +42,7 @@ pixel.rgb  # the rgb value
 
 Setting a pixel:
 ```py
-await client.set_pixel(0, 0, dpixels.Color(255, 255, 255)  # set the pixel at 0,0 to white
+await client.set_pixel(0, 0, dpixels.Color(255, 255, 255))  # set the pixel at 0,0 to white
 ```
 
 Autodrawing an image:
