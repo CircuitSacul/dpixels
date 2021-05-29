@@ -66,12 +66,16 @@ class AutoDraw:
         done: bool = False
         while not done:
             canvas = await self.client.get_canvas()
+            loop = False
             for _x, _y, pix in self.pixels:
                 x = _x + self.x
                 y = _y + self.y
                 if canvas[x, y] != pix:
                     await self.do_pixel(x, y, pix)
-                    continue
+                    loop = True
+                    break
+            if loop:
+                continue
             if not forever:
                 return
             await asyncio.sleep(guard_delay)
