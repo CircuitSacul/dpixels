@@ -54,3 +54,6 @@ im = Image.open("path_to_image.ext")
 source = dpixels.Source.from_image((0, 0), im)
 await client.draw_sources([source])  # draw the source
 ```
+
+## Credits
+This library is heavily based on [Artemis21/dpypx](https://github.com/Artemis21/dpypx)
