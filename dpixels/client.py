@@ -170,7 +170,6 @@ class Client:
             return await self.do_request(*args, **kwargs)
         except (Cooldown, Ratelimit) as e:
             if retry_on_ratelimit:
-                print("Pause")
                 await e.ratelimit.pause()
                 return await self.request(
                     *args, **kwargs, retry_on_ratelimit=True
