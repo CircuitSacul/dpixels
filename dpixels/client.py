@@ -214,5 +214,6 @@ class Client:
                 return await resp.read()
 
     async def close(self):
-        await self.session.close()
+        if self.session and not self.session.closed:
+            await self.session.close()
         self.ratelimits.save()
