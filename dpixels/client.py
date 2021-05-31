@@ -45,17 +45,19 @@ class Client:
         self, sources: List["Source"], forever: bool = True
     ):
         async def do_draw(s: "Source"):
-            val = s.get_next_pixel()
-            if not val:
-                return
-            x, y, p = val
-            if self.canvas[x, y] == p:
-                return await do_draw(s)
-            try:
-                await self.set_pixel(x, y, p)
-                return
-            except (Cooldown, Ratelimit) as e:
-                await e.ratelimit.pause()
+            while True:
+                val = s.get_next_pixel()
+                if not val:
+                    return
+                x, y, p = val
+                if self.canvas[x, y] == p:
+                    continue
+                try:
+                    await self.set_pixel(x, y, p)
+                except (Cooldown, Ratelimit) as e:
+                    await e.ratelimit.pause()
+                finally:
+                    return
 
         def any_needs_update() -> bool:
             for s in sources:
