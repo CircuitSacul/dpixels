@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import Callable, TYPE_CHECKING, List, Optional, Tuple
 
 from PIL import Image
 
@@ -65,6 +65,7 @@ class Source:
         xy: Tuple[int, int],
         image: Image.Image,
         *,
+        skip_pixel_if: Callable[[Tuple[int, int], Color, Color], bool] = None,
         fix: bool = True,
         scale: int = 1,
         bg_color: Optional[Color] = None,
@@ -87,11 +88,18 @@ class Source:
                 if image.mode == "RGBA":
                     p = list(p)
                     p[-1] = map_255_to_1(p[-1])
-                    c = Color(*p)
+                    orig = c = Color(*p)
                     if bg_color:
-                        c = Color(*bg_color.add_color_with_alpha(c))
+                        after = c = Color(*bg_color.add_color_with_alpha(c))
+                    else:
+                        after = orig
                 else:
-                    c = Color(*p)
+                    after = orig = c = Color(*p)
+
+                if skip_pixel_if:
+                    if skip_pixel_if((x, y), orig, after):
+                        continue
+
                 pixels.append((x, y, c))
 
         return cls(*xy, pixels, fix=fix)
