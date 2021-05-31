@@ -42,4 +42,5 @@ class Ratelimit(DPixelsError):
 
 class HttpException(DPixelsError):
     def __init__(self, status: int, detail: str):
+        self.status = status
         super().__init__(f"HTTP Error {status}: {detail}")

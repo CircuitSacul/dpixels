@@ -162,58 +162,99 @@ class Client:
 
     async def request(
         self,
+        *args,
+        retry_on_ratelimit: bool = True,
+        **kwargs,
+    ):
+        try:
+            return await self.do_request(*args, **kwargs)
+        except (Cooldown, Ratelimit) as e:
+            if retry_on_ratelimit:
+                print("Pause")
+                await e.ratelimit.pause()
+                return await self.request(
+                    *args, **kwargs, retry_on_ratelimit=True
+                )
+            raise
+
+    async def do_request(
+        self,
         method: str,
         endpoint: str,
-        *,
         data: Optional[Dict[Any, Any]] = None,
         params: Optional[Dict[Any, Any]] = None,
         parse_json: bool = True,
-        retry_on_ratelimit: bool = True,
     ) -> Union[Dict[Any, Any], str]:
         session = await self.get_session()
-
         ratelimit = self.ratelimits.ratelimits[endpoint]
-        await ratelimit.lock.acquire()
-        if not ratelimit.valid:
-            logger.debug("Ratelimit is invalid.")
-            retry_after = None
-        else:
-            retry_after = ratelimit.retry_after
-        if retry_after:
-            if not retry_on_ratelimit:
-                ratelimit.lock.release()
-                raise Ratelimit(endpoint, retry_after, ratelimit)
-            ratelimit.lock.release()
-            await ratelimit.pause()
-            return await self.request(
+
+        async with ratelimit.lock:
+            if ratelimit.ratelimited:
+                try:
+                    _, headers, _ = await self.raw_request(
+                        session,
+                        "HEAD",
+                        self.e_base_url + endpoint,
+                        parse_json=False,
+                    )
+                    ratelimit.update(headers)
+                except HttpException as e:
+                    if e.status == 405:
+                        ratelimit.ratelimited = False
+                    else:
+                        raise
+
+            if ratelimit.retry_after:
+                raise Ratelimit(
+                    endpoint,
+                    ratelimit.retry_after,
+                    ratelimit,
+                )
+
+            result, headers, status = await self.raw_request(
+                session,
                 method,
-                endpoint,
+                self.e_base_url + endpoint,
                 data=data,
                 params=params,
-                parse_json=parse_json,
-                retry_on_ratelimit=False,
+                parse_json=parse_json
             )
 
+            if status == 429:
+                ratelimit.update(headers)
+                raise Cooldown(
+                    endpoint,
+                    ratelimit.retry_after,
+                    ratelimit,
+                )
+
+            return result
+
+    async def raw_request(
+        self,
+        session: aiohttp.ClientSession,
+        method: str,
+        url: str,
+        data: Optional[Dict[Any, Any]] = None,
+        params: Optional[Dict[Any, Any]] = None,
+        parse_json: bool = True,
+    ) -> Tuple[Union[Dict[Any, Any], str], Dict[Any, Any], int]:
         async with session.request(
             method,
-            self.e_base_url + endpoint,
+            url,
             json=data,
-            params=params,
+            params=params
         ) as resp:
-            ratelimit.update(resp.headers)
-            ratelimit.lock.release()
-            if resp.status == 429:
-                raise Cooldown(endpoint, ratelimit.retry_after, ratelimit)
             if 500 > resp.status > 400:
                 data = await resp.json()
-                raise HttpException(resp.status, data["detail"])
-
+                data = data["detail"] if data else "None"
+                raise HttpException(resp.status, data)
             if parse_json:
-                return await resp.json()
+                data = await resp.json()
             else:
-                return await resp.read()
+                data = await resp.read()
+            return data, resp.headers, resp.status
 
     async def close(self):
         if self.session and not self.session.closed:
             await self.session.close()
-        self.ratelimits.save()

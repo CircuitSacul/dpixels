@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import json
 import logging
 from asyncio import Lock
 from collections import defaultdict
@@ -67,55 +66,8 @@ class RateLimitedEndpoint:
         await asyncio.sleep(total)
         self.retry_after = 0
 
-    def asdict(self) -> Dict[str, Optional[int]]:
-        return {
-            "ratelimited": self.ratelimited,
-            "remaining": self.remaining,
-            "limit": self.limit,
-            "reset": self.reset.timestamp()
-            if self.reset is not None
-            else None,
-            "cooldown_reset": self.cooldown_reset.timestamp()
-            if self.cooldown_reset is not None
-            else None,
-        }
-
-    def load(self, data: dict):
-        reset = data.pop("reset", None)
-        cooldown = data.pop("cooldown_reset", None)
-        self.reset = datetime.datetime.fromtimestamp(reset) if reset else None
-        self.cooldown_reset = (
-            datetime.datetime.fromtimestamp(cooldown) if cooldown else None
-        )
-        for key, val in data.items():
-            self.__setattr__(key, val)
-        self.valid = True
-
 
 class Ratelimits:
     def __init__(self, save_file: str):
         self.save_file = save_file
         self.ratelimits = defaultdict(RateLimitedEndpoint)
-
-        try:
-            f = open(save_file, "r")
-        except FileNotFoundError:
-            data = {}
-        else:
-            data = json.load(f)
-        finally:
-            try:
-                f.close()
-            except NameError:
-                pass
-
-        for endpoint, d in data.items():
-            self.ratelimits[endpoint].load(d)
-
-    def save(self):
-        data = {}
-        for name, r in self.ratelimits.items():
-            data[name] = r.asdict()
-
-        with open(self.save_file, "w+") as f:
-            f.write(json.dumps(data))
