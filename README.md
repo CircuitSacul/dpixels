@@ -9,18 +9,6 @@ A(nother) wrapper for the Python Discord Pixel API.
 
 ## Examples
 
-### Note:
-In order for the ratelimit to work cross-restart, you MUST do it like this:
-```py
-async def run():
-    try:
-        # code here
-    finally:
-        await client.close()
-        
-asyncio.run(run())
-```
-
 Get the canvas:
 ```py
 client = dpixels.Client(token="your token")
