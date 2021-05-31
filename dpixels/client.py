@@ -78,6 +78,9 @@ class Client:
                     continue
                 await do_draw(s)
                 break
+            else:
+                logger.info("All sources correct, sleeping 5s.")
+                await asyncio.sleep(5)
 
     async def get_canvas_size(self):
         data = await self.request("GET", self.e_get_size)
