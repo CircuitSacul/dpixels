@@ -41,6 +41,18 @@ class Client:
         self.ratelimits = Ratelimits(save_file)
         self.canvas: Optional[Canvas] = None
 
+    async def draw_sources_blind(
+        self,
+        sources: List["Source"],
+        loop: bool = True,
+    ):
+        going = True
+        while going:
+            for s in sources:
+                for x, y, p in s.pixels:
+                    await self.set_pixel(x, y, p, retry=True)
+            going = loop
+
     async def draw_sources(
         self, sources: List["Source"], forever: bool = True
     ):
