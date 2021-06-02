@@ -3,9 +3,10 @@ from typing import Callable, TYPE_CHECKING, List, Optional, Tuple
 from PIL import Image
 
 from .color import Color
+from .abc.source import ABCSource
 
 if TYPE_CHECKING:
-    from .canvas import Canvas
+    from .client import Client
 
 MAX1, MIN1 = (255, 0)
 MAX2, MIN2 = (1, 0)
@@ -15,7 +16,7 @@ def map_255_to_1(value: int):
     return MIN2 + (((value - MIN1) / (MAX1 - MIN1)) * (MAX2 - MIN2))
 
 
-class Source:
+class Source(ABCSource):
     def __init__(
         self,
         x: int,
@@ -36,18 +37,17 @@ class Source:
         self.pixel_queue: List[Tuple[int, int, Color]] = self.pixels.copy()
         self.fix_queue: List[Tuple[int, int, Color]] = []
 
-    @property
-    def needs_update(self) -> bool:
+    async def needs_update(self) -> bool:
         return (self.fix and self.fix_queue) or self.pixel_queue
 
-    def get_next_pixel(self) -> Optional[Tuple[int,  int, "Color"]]:
+    async def next(self) -> Optional[Tuple[int,  int, "Color"]]:
         if self.fix and self.fix_queue:
             return self.fix_queue.pop(0)
         if self.pixel_queue:
             return self.pixel_queue.pop(0)
         return None
 
-    def update_fix_queue(self, canvas: "Canvas"):
+    async def update(self, client: "Client"):
         if not self.fix:
             return
         for x, y, p in self.pixels:
@@ -56,7 +56,7 @@ class Source:
                 continue
             if v in self.fix_queue:
                 continue
-            if canvas[x, y] != p:
+            if client.canvas[x, y] != p:
                 self.fix_queue.append((x, y, p))
 
     @classmethod
