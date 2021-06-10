@@ -261,7 +261,7 @@ class Client:
         ) as resp:
             if 500 > resp.status > 400:
                 data = await resp.json()
-                data = data["detail"] if data else "None"
+                data = data.get("detail", None) if data else "None"
                 raise HttpException(resp.status, data)
             if parse_json:
                 data = await resp.json()
